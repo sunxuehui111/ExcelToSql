@@ -52,6 +52,7 @@
             this.pgbWrite = new System.Windows.Forms.ProgressBar();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
             this.clbExcelSheet = new System.Windows.Forms.CheckedListBox();
+            this.cball = new System.Windows.Forms.CheckBox();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -272,11 +273,23 @@
             this.clbExcelSheet.Size = new System.Drawing.Size(207, 116);
             this.clbExcelSheet.TabIndex = 9;
             // 
+            // cball
+            // 
+            this.cball.AutoSize = true;
+            this.cball.Location = new System.Drawing.Point(71, 137);
+            this.cball.Name = "cball";
+            this.cball.Size = new System.Drawing.Size(48, 16);
+            this.cball.TabIndex = 10;
+            this.cball.Text = "全选";
+            this.cball.UseVisualStyleBackColor = true;
+            this.cball.CheckedChanged += new System.EventHandler(this.cball_CheckedChanged);
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(400, 522);
+            this.Controls.Add(this.cball);
             this.Controls.Add(this.clbExcelSheet);
             this.Controls.Add(this.pgbWrite);
             this.Controls.Add(this.groupBox1);
@@ -321,6 +334,7 @@
         private System.Windows.Forms.ProgressBar pgbWrite;
         private System.Windows.Forms.Timer timer1;
         private System.Windows.Forms.CheckedListBox clbExcelSheet;
+        private System.Windows.Forms.CheckBox cball;
     }
 }
 

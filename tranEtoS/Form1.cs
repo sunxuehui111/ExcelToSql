@@ -13,39 +13,38 @@ namespace tranEtoS
 {
     public partial class Form1 : Form
     {
-        private BackgroundWorker worker = new BackgroundWorker();
-        private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
+        //private BackgroundWorker worker = new BackgroundWorker();
+        //private System.Windows.Forms.Timer timer = new System.Windows.Forms.Timer();
         public Form1()
         {
             InitializeComponent(); 
         }
 
-        void timer_Tick(object sender, EventArgs e)
-     {
-         if (this.pgbWrite.Value < this.pgbWrite.Maximum)
-             {
-                 this.pgbWrite.PerformStep();
-             }
-        }
+        //   void timer_Tick(object sender, EventArgs e)
+        //{
+        //    if (this.pgbWrite.Value < this.pgbWrite.Maximum)
+        //        {
+        //            this.pgbWrite.PerformStep();
+        //        }
+        //   }
 
-         void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-             timer.Stop();
-             this.pgbWrite.Value = this.pgbWrite.Maximum;
-             MessageBox.Show(string.Format("将文件导入到数据库 {0}成功！", cbDataName.SelectedItem.ToString()));
-        }
- 
-         void worker_DoWork(object sender, DoWorkEventArgs e)
-         {
-             int count = 100;
-            for (int i = 0; i < count; i++)
-            {
-            }
-        }
+        // void worker_RunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        //{
+        //     timer.Stop();
+        //     this.pgbWrite.Value = this.pgbWrite.Maximum;
+        //     MessageBox.Show(string.Format("将文件导入到数据库 {0}成功！", cbDataName.SelectedItem.ToString()));
+        //}
+
+        // void worker_DoWork(object sender, DoWorkEventArgs e)
+        // {
+        //     int count = 100;
+        //    for (int i = 0; i < count; i++)
+        //    {
+        //    }
+        //}
         public static string connString;
         public static string sendStr;
-        public bool inOrout = true;
-
+        public static string updateData;
         /// <summary>
         /// 导入  单击导入  第二次刷新 进度条控制
         /// </summary>
@@ -53,58 +52,53 @@ namespace tranEtoS
         /// <param name="e"></param>
         private void button1_Click(object sender, EventArgs e)
         {
-            if (inOrout)
-            {
-                int m = 0, j = 0;
+            string startStr = string.Format("开始向: {0} 数据库导入", cbDataName.SelectedItem.ToString());
+            WriteLog(startStr);
+                int m = 0, j = 0,counter = clbExcelSheet.Items.Count;
                 for (; m < clbExcelSheet.Items.Count; m++)
                 {
                     if (!clbExcelSheet.GetItemChecked(m))
                     {
                         j++;
+                        counter -= 1;
                     }
                 }
-                if (File.Exists(textBox2.Text))
+                this.pgbWrite.Value = 0;
+                this.pgbWrite.Maximum = counter;
+                this.pgbWrite.Step = 1;
+            if (File.Exists(textBox2.Text))
+            {
+                if (m == j)
                 {
-                    if (m == j)
-                    {
-                        MessageBox.Show("请选择Excel表！");
-                        return;
-                    }
-                    else
-                    {
-                        for (int i = 0; i < clbExcelSheet.Items.Count; i++)
-                        {
-                            if (clbExcelSheet.GetItemChecked(i))
-                            {
-                                TransferData(textBox2.Text, clbExcelSheet.GetItemText(clbExcelSheet.Items[i]), connString);
-                                this.pgbWrite.Value = 0;
-                                this.pgbWrite.Maximum = 200;
-                                this.pgbWrite.Step = 1;
-                                timer.Interval = 100;
-                                timer.Tick += new EventHandler(timer_Tick);
-                                worker.WorkerReportsProgress = true;
-                                worker.DoWork += new DoWorkEventHandler(worker_DoWork);
-                                worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
-                                worker.RunWorkerAsync();
-                                timer.Start();
-                            }
-                        }
-
-                        inOrout = false;
-                        button1.Text = "刷新";
-                    }
-                    //MessageBox.Show(string.Format("导入到数据库 {0} 中 {1} 表成功！", cbDataName.SelectedItem.ToString(), lbExcelSheet.SelectedItem.ToString()));
+                    MessageBox.Show("请选择Excel表！");
+                    return;
                 }
                 else
                 {
-                    MessageBox.Show("文件路径有误!");
+                    for (int i = 0; i < clbExcelSheet.Items.Count; i++)
+                    {
+                        if (clbExcelSheet.GetItemChecked(i))
+                        {
+                            TransferData(textBox2.Text, clbExcelSheet.GetItemText(clbExcelSheet.Items[i]), connString);
+                            pgbWrite.Value++;
+                            //timer.Interval = 100;
+                            //timer.Tick += new EventHandler(timer_Tick);
+                            //worker.WorkerReportsProgress = true;
+                            //worker.DoWork += new DoWorkEventHandler(worker_DoWork);
+                            //worker.RunWorkerCompleted += new RunWorkerCompletedEventHandler(worker_RunWorkerCompleted);
+                            //worker.RunWorkerAsync();
+                            //timer.Start();
+                        }
+                    }
+                    MessageBox.Show(string.Format("将文件导入到数据库 {0}成功！", cbDataName.SelectedItem.ToString()));
+                    string ending = string.Format("结束向:{0} 数据库导入数据", cbDataName.SelectedItem.ToString());
+                    WriteLog(ending);
+                    initControl();
                 }
             }
             else
             {
-                button1.Text = "导入";
-                inOrout = true;
-                initControl();
+                MessageBox.Show("文件路径有误!");
             }
         }
 
@@ -136,6 +130,7 @@ namespace tranEtoS
                     clbExcelSheet.Items.Add(strSheetTableName);
                 }
             }
+            clbExcelSheet.SetItemChecked(0, true);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -308,6 +303,39 @@ namespace tranEtoS
             this.btnrefresh_Click(sender, e);//触发button事件  
         }
 
+
+        public bool Exist(string tableName, string connectionString)
+        {
+            bool bExist = false;
+            SqlConnection _Connection = new SqlConnection(connectionString);
+            try
+            {
+                _Connection.Open();
+                using (DataTable dt = _Connection.GetSchema("Tables"))
+                {
+                    foreach (DataRow dr in dt.Rows)
+                    {
+                        string str1 = dr["TABLE_NAME"].ToString();
+                    if (string.Equals(tableName, str1))
+                    {
+                                bExist = true;
+                                break;
+                    }
+                    
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
+            }
+            finally
+            {
+                _Connection.Dispose();
+            }
+
+            return bExist;
+        }
         /// <summary>
         /// Excel写入数据库 实现函数
         /// </summary>
@@ -331,8 +359,14 @@ namespace tranEtoS
 
 
                 //如果目标表不存在则创建,excel文件的第一行为列标题,从第二行开始全部都是数据记录     
-                string strSql = string.Format("if exists(select * from sysobjects where name = '{0}') truncate table {0}", sheetName);   //以sheetName为表名     
-
+                string strSql = string.Format("if exists(select * from sysobjects where name = '{0}') truncate table {0}", sheetName);   //以sheetName为表名  
+                
+                if (!Exist(sheetName, connString))
+                {
+                    string ex = "数据库:" + sheetName + "表不存在";
+                    WriteLog(ex);
+                    return;
+                }
                 //foreach (System.Data.DataColumn c in ds.Tables[0].Columns)
                 //{
                 //    strSql += string.Format("[{0}] varchar(255),", c.ColumnName);
@@ -358,16 +392,22 @@ namespace tranEtoS
                     bcp.WriteToServer(ds.Tables[0]);
                 }
                 conn.Close();
+                if (updateData == null)
+                    updateData = "0";
+                string success = string.Format("导入 {0} 表成功,更新 {1} 行", sheetName, updateData);
+                WriteLog(success);
             }
             catch (Exception ex)
             {
                 System.Windows.Forms.MessageBox.Show(ex.Message);
+                WriteLog(ex.Message);
             }
         }
         //进度显示        
         void bcp_SqlRowsCopied(object sender, System.Data.SqlClient.SqlRowsCopiedEventArgs e)
         {
             this.Text = e.RowsCopied.ToString();
+            updateData = e.RowsCopied.ToString();
             this.Update();
         }
 
@@ -398,6 +438,48 @@ namespace tranEtoS
             this.pgbWrite.Value = 0;
             lbDataName.Items.Clear();
             this.Update();
+        }
+
+        private void cball_CheckedChanged(object sender, EventArgs e)
+        {
+            if (cball.Checked)
+            {
+                for (int j = 0; j < clbExcelSheet.Items.Count; j++)
+                    clbExcelSheet.SetItemChecked(j, true);
+            }
+            else
+            {
+                for (int j = 0; j < clbExcelSheet.Items.Count; j++)
+                    clbExcelSheet.SetItemChecked(j, false);
+            }
+        }
+
+
+        public static void WriteLog(string strLog)
+        {
+            string sFilePath = "d:\\" + DateTime.Now.ToString("yyyyMM");
+            string sFileName = "rizhi" + DateTime.Now.ToString("dd") + ".log";
+            sFileName = sFilePath + "\\" + sFileName; //文件的绝对路径
+            if (!Directory.Exists(sFilePath))//验证路径是否存在
+            {
+                Directory.CreateDirectory(sFilePath);
+                //不存在则创建
+            }
+            FileStream fs;
+            StreamWriter sw;
+            if (File.Exists(sFileName))
+            //验证文件是否存在，有则追加，无则创建
+            {
+                fs = new FileStream(sFileName, FileMode.Append, FileAccess.Write);
+            }
+            else
+            {
+                fs = new FileStream(sFileName, FileMode.Create, FileAccess.Write);
+            }
+            sw = new StreamWriter(fs);
+            sw.WriteLine(DateTime.Now.ToString("yyyy-MM-dd HH-mm-ss") + "   ---   " + strLog);
+            sw.Close();
+            fs.Close();
         }
     }
 }
